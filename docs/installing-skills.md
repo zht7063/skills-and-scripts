@@ -8,7 +8,7 @@ MWF installation also requires npm and may download build dependencies.
 
 | Need | Recommended route | Result |
 | --- | --- | --- |
-| Manuscript audit, LaTeX layout or Mihomo guidance | `install-skill.ts NAME --mode copy` | Independent skill instructions and helpers |
+| Manuscript audit, LaTeX layout, Mihomo guidance or travel guides | `install-skill.ts NAME --mode copy` | Independent skill instructions and helpers |
 | Develop a skill in this checkout | `install-skill.ts NAME --mode link` | A live link to the source directory |
 | Project memory with local MCP | `install-mwf.ts --root PROJECT --harness codex --git-mode track` | Runtime, project rules, adapters and verified MCP connection |
 
@@ -44,6 +44,7 @@ Choose one command:
 node --experimental-strip-types scripts/install-skill.ts auditing-manuscript-loopholes --mode copy
 node --experimental-strip-types scripts/install-skill.ts latex-layout-fixer --mode copy
 node --experimental-strip-types scripts/install-skill.ts mihomo-remote-linux --mode copy
+node --experimental-strip-types scripts/install-skill.ts travel-guide-html --mode copy
 ```
 
 Install for Pi or a custom destination:
@@ -110,7 +111,7 @@ explained in the runtime guide; this generic command does not detach MCP.
 ## Validate source packages (development)
 
 Install repository development dependencies before full YAML and structural
-validation. This covers four independent skills, three bundled MWF adapters,
+validation. This covers five independent skills, three bundled MWF adapters,
 JSON, local Markdown links and shared MWF instruction synchronization:
 
 ```sh

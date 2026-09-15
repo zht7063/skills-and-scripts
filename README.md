@@ -27,6 +27,8 @@ See [docs/repository-layout.md](docs/repository-layout.md) for the detailed stru
 - [`auditing-manuscript-loopholes`](skills/auditing-manuscript-loopholes/README.md) — Read-only manuscript evidence and consistency audits.
 - [`latex-layout-fixer`](skills/latex-layout-fixer/README.md) — Diagnose and repair LaTeX layout while preserving venue templates. Requires Python 3.10+, a TeX distribution with `latexmk`, and `pdftoppm` or `mutool`; rendering all pages also requires `pdfinfo`.
 
+- [`travel-guide-html`](skills/travel-guide-html/README.md) — Chinese travel research, daily itineraries and linked maps delivered as offline HTML; includes a Python static checker.
+
 ### Runtime adapters and plugins
 
 `packages/mwf/adapters/` ships three skills with the runtime: `memory-with-files`, `mwf-init`, and `mwf-status`. They are installed by MWF setup, not the standalone skill installer. The standalone memory skill requires the MWF runtime for executable operations.
@@ -53,7 +55,7 @@ For a standalone installation, copy the chosen skill into Codex:
 node --experimental-strip-types scripts/install-skill.ts auditing-manuscript-loopholes --mode copy
 ```
 
-Use `latex-layout-fixer` or `mihomo-remote-linux` in place of the name above.
+Use `latex-layout-fixer`, `mihomo-remote-linux` or `travel-guide-html` in place of the name above.
 Add `--agent pi` for Pi. Contributors who want edits in this checkout to remain
 live can use `--mode link` and keep the checkout at its current path.
 The installer copies instructions and helpers; install the skill's external
@@ -83,7 +85,7 @@ not published to the registry. No Codex plugin installation is required.
 
 Repository tooling, MWF runtime code, their tests and the Pi adapter
 are TypeScript. Individual skills may use other languages when needed;
-`latex-layout-fixer` includes Python helpers using only the standard library. Requires Node **22.16+** and npm. Restore both independent
+`latex-layout-fixer` and `travel-guide-html` include Python helpers using only the standard library. Requires Node **22.16+** and npm. Restore both independent
 lockfiles before running the full checks:
 
 ```sh
@@ -95,7 +97,7 @@ npm run test:package --prefix packages/mwf
 ```
 
 `npm test` checks types for runtime, tooling and tests, runs repository and skill
-tests, validates all four standalone skills and three bundled adapters, checks MWF instruction synchronization, and runs MWF integration tests. Repository commands use
+tests, validates all five standalone skills and three bundled adapters, checks MWF instruction synchronization, and runs MWF integration tests. Repository commands use
 `node --experimental-strip-types scripts/<command>.ts` and need no build step or
 third-party loader. The published-package layout continues to use compiled JS;
 TS scripts and development dependencies are not shipped. See
