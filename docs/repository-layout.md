@@ -74,3 +74,27 @@ instruction adapter; it does not ship a Python writer or duplicate templates.
 Fixed legacy fixtures in `packages/mwf/tests/fixtures/` verify schema-1 data
 compatibility without running Python. Repository installation and validation
 tools and tests are also TypeScript; Node 22.16+ runs them with `--experimental-strip-types`.
+
+## Language and distribution boundaries
+
+Repository tools and the MWF runtime use TypeScript. Skills may ship helpers in
+other languages; declare required runtimes and external tools in their
+`SKILL.md` compatibility field. Optional folders and UI metadata are added only
+when useful.
+
+The canonical MWF instruction source is `skills/memory-with-files/SKILL.md`.
+The bundled `packages/mwf/adapters/memory-with-files/SKILL.md` must match it
+except for the final references paragraph: the npm package does not ship those
+standalone references. Update both files together; `npm run validate` rejects
+drift. The other two bundled adapters, `mwf-init` and `mwf-status`, are independent
+entrypoints owned by the runtime package. Do not install both memory variants
+into the same skill discovery scope.
+
+`npm run validate` checks standalone skills and all MWF adapters, including full
+YAML parsing, required string fields, names, local Markdown links and JSON.
+The YAML parser is a development dependency; installation tools retain their
+dependency-free metadata reader. Validation is structural and does not prove
+behavioral quality. Run `npm ci` before development validation.
+
+No Codex plugins are packaged here. Add plugin manifests and marketplace
+configuration only when plugin distribution is an explicit project requirement.

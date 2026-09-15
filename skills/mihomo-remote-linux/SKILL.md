@@ -1,6 +1,6 @@
 ---
 name: mihomo-remote-linux
-description: Install, audit, update, repair, or migrate Mihomo on a remote Linux server over SSH. Use whenever the task mentions Mihomo, Clash Meta/Mihomo, remote Linux proxy ports, a server proxy, TUN routing, system-wide proxying, `mode: rule`/`mode: global`, or a Mihomo systemd service. Handle the private uploaded `config.yaml` safely: require the user to place it on the target host and never generate, upload, print, commit, sync, or rewrite it.
+description: "Install, audit, update, repair, or migrate Mihomo on a remote Linux server over SSH. Use whenever the task mentions Mihomo, Clash Meta/Mihomo, remote Linux proxy ports, a server proxy, TUN routing, system-wide proxying, `mode: rule`/`mode: global`, or a Mihomo systemd service. Handle the private uploaded `config.yaml` safely: require the user to place it on the target host and never generate, upload, print, commit, sync, or rewrite it."
 compatibility: Requires SSH access to the target Linux host; global TUN changes also require passwordless or interactive sudo and a separately reachable recovery path.
 ---
 

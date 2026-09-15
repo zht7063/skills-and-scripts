@@ -1,7 +1,7 @@
 ---
 name: latex-layout-fixer
 description: Diagnose and fix academic-paper LaTeX layout defects while preserving the publisher or conference template. Use this skill whenever a user asks to repair or improve figure/table placement, floats far from their first citation, large blank areas, float-only pages, awkward page or column breaks, overfull/underfull boxes, unprocessed floats, or one-column versus two-column layout—even if they mention only a bad PDF page or an image appearing in the wrong place. Also use it when converting an existing manuscript between one- and two-column modes requires layout QA. Do not use it to rewrite scholarly content, redesign figure artwork, or evade a venue's formatting rules.
-compatibility: Requires a TeX distribution with latexmk and a PDF rasterizer such as pdftoppm or mutool; visual inspection requires an image-viewing tool.
+compatibility: Requires Python 3.10+ for bundled scripts, a TeX distribution with latexmk and a PDF rasterizer such as pdftoppm or mutool; visual inspection requires an image-viewing tool.
 ---
 
 # LaTeX Layout Fixer

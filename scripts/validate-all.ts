@@ -1,4 +1,9 @@
 import path from "node:path";
+import {
+  discoverAdapters,
+  validateFrontmatter,
+  validateMwfSync,
+} from "./validate-metadata.ts";
 import { argumentsFor, fail } from "./arguments.ts";
 import {
   discoverSkills,
@@ -18,19 +23,21 @@ try {
       "Usage: node --experimental-strip-types scripts/validate-all.ts [--tests]\nValidate every source skill, optionally running its TypeScript tests.",
     );
   else {
-    const skills = discoverSkills();
+    const skills = [...discoverSkills(), ...discoverAdapters()];
     if (!skills.length) throw new SkillToolError("no skills found");
-    let failures = 0;
+    const syncIssues = validateMwfSync();
+    let failures = syncIssues.length;
+    for (const issue of syncIssues) console.log(`FAIL ${issue}`);
     for (const skill of skills) {
-      const issues = validateSkill(skill);
+      const issues = [...validateSkill(skill), ...validateFrontmatter(skill)];
       if (issues.length) {
         failures++;
         console.log(
-          `FAIL ${path.basename(skill)}\n${issues.map((i) => `  - ${i}`).join("\n")}`,
+          `FAIL ${path.relative(process.cwd(), skill)}\n${issues.map((i) => `  - ${i}`).join("\n")}`,
         );
         continue;
       }
-      console.log(`PASS ${path.basename(skill)}`);
+      console.log(`PASS ${path.relative(process.cwd(), skill)}`);
       if (values.tests) {
         const result = runSkillTests(skill);
         if (!result) console.log("  tests: none");

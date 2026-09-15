@@ -136,6 +136,8 @@ export function validateSkill(
     issues.push(
       `frontmatter name '${metadata.name}' does not match expected name '${required}'`,
     );
+  if (metadata.name.length > 64)
+    issues.push("skill name exceeds 64 characters");
   if (!namePattern.test(metadata.name))
     issues.push(`invalid skill name: ${metadata.name}`);
   if (!metadata.description) issues.push("description must not be empty");

@@ -25,6 +25,15 @@ See [docs/repository-layout.md](docs/repository-layout.md) for the detailed stru
   privacy-preserving, recovery-first guide for operating Mihomo on remote Linux
   hosts, from loopback proxy services to guarded system-wide TUN routing.
 
+- [`auditing-manuscript-loopholes`](skills/auditing-manuscript-loopholes/SKILL.md) — Read-only manuscript evidence and consistency audits.
+- [`latex-layout-fixer`](skills/latex-layout-fixer/SKILL.md) — Diagnose and repair LaTeX layout while preserving venue templates. Requires Python 3.10+, a TeX distribution with `latexmk`, and `pdftoppm` or `mutool`; rendering all pages also requires `pdfinfo`.
+
+### Runtime adapters and plugins
+
+`packages/mwf/adapters/` ships three skills with the runtime: `memory-with-files`, `mwf-init`, and `mwf-status`. They are installed by MWF setup, not the standalone skill installer. The standalone memory skill requires the MWF runtime for executable operations.
+
+This repository currently has no Codex plugin manifest or marketplace. MWF is an npm CLI/MCP package with a Pi extension adapter.
+
 Repository-level commands under `scripts/` install skills for Codex, Pi Agent,
 or a custom target, safely uninstall one exact skill, and validate all source
 packages. See [docs/installing-skills.md](docs/installing-skills.md) for command
@@ -58,8 +67,9 @@ Local `node_modules/` directories and build outputs are Git-ignored. Commit
 
 ## Development
 
-All maintained executable source, repository scripts, tests and the Pi adapter
-are TypeScript. Requires Node **22.16+** and npm. Restore both independent
+Repository tooling, MWF runtime code, their tests and the Pi adapter
+are TypeScript. Individual skills may use other languages when needed;
+`latex-layout-fixer` includes Python helpers using only the standard library. Requires Node **22.16+** and npm. Restore both independent
 lockfiles before running the full checks:
 
 ```sh
@@ -71,7 +81,7 @@ npm run test:package --prefix packages/mwf
 ```
 
 `npm test` checks types for runtime, tooling and tests, runs repository and skill
-tests, validates skills and runs MWF integration tests. Repository commands use
+tests, validates all four standalone skills and three bundled adapters, checks MWF instruction synchronization, and runs MWF integration tests. Repository commands use
 `node --experimental-strip-types scripts/<command>.ts` and need no build step or
 third-party loader. The published-package layout continues to use compiled JS;
 TS scripts and development dependencies are not shipped. See
