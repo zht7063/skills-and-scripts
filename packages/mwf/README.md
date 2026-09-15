@@ -6,9 +6,10 @@ API is needed for file operations. Node **22.16+** is required. Tested locally
 with Node 22.16 and 26.7, and Pi 0.83.0. The earlier Codex CLI 0.153.4
 behavioral acceptance is recorded in the implementation notes.
 
-## One-command installation
+## Recommended installation
 
-From a source checkout, with Node **22.16+** and npm installed:
+From the **repository root** of a source checkout, with Node **22.16+** and npm
+installed (not from `packages/mwf/`):
 
 ```sh
 node --experimental-strip-types scripts/install-mwf.ts --root "/absolute/project" --harness codex --git-mode track
@@ -21,7 +22,8 @@ command afterward. Restart/reload the client and trust the project to activate i
 Use `--harness codex,pi` for both clients (Pi must already be installed).
 Building and installing the Pi adapter may need network access.
 
-For an existing bundled tarball, skip the build and install the runtime offline:
+For an existing bundled tarball, skip the build and install the runtime offline
+for Codex (Pi dependency installation may still require network access):
 
 ```sh
 node --experimental-strip-types scripts/install-mwf.ts --package /path/zht7063-mwf-0.1.0.tgz --root "/absolute/project" --harness codex --git-mode track
@@ -35,7 +37,24 @@ runtime and reruns idempotent setup. If setup fails, the installed runtime and
 completed setup steps remain available for diagnosis and retry. Stop active MWF
 sessions before upgrading the runtime. This TypeScript entry point runs from the checkout without a prior build or installed dependencies.
 
-## Build and install
+## Verify the installed connection
+
+The installer prints a `CLI:` line containing the Node executable and installed
+CLI path. Use that command prefix in place of `mwf` throughout this guide; the
+recommended installation does not modify PATH. For the default runtime location
+and a shell where `node` is available:
+
+```sh
+node "$HOME/.local/share/mwf/node_modules/@zht7063/mwf/dist/cli.js" status --root "/absolute/project"
+node "$HOME/.local/share/mwf/node_modules/@zht7063/mwf/dist/cli.js" doctor --root "/absolute/project"
+```
+
+With `--prefix`, use the CLI path printed for that installation instead.
+`status` inspects connection/schema state and `doctor` checks memory health.
+The setup probe verifies a real MCP call; after restarting/reloading the client,
+ask it to inspect this project's MWF status to verify discovery in the client.
+
+## Manual build and global installation (alternative)
 
 From the repository root:
 
@@ -53,6 +72,10 @@ at runtime. Installation does not use npm postinstall to guess project roots.
 The repository lockfile fixes the build inputs; runtime dependencies are bundled into the tarball for reproducible offline installation. Pin releases rather than downloading `latest` on every MCP startup.
 
 ## Connect a project
+
+The recommended installer already runs setup for its selected project. Run setup
+again to connect another project or refresh an existing connection. The examples
+below use `mwf` as shorthand for the installed CLI command described above.
 
 ```sh
 mwf setup --root /absolute/project --harness codex,pi --git-mode track --dry-run
@@ -185,7 +208,23 @@ retaining a hidden copy. It does not remove quotations in other records, externa
 backups, filesystem snapshots or Git history. Credential detection is heuristic;
 never store secrets intentionally.
 
-## Detach or upgrade
+## Upgrade
+
+Stop active MWF sessions, update the source checkout and repeat the recommended
+installation command with the same project, runtime prefix, clients and Git mode:
+
+```sh
+node --experimental-strip-types scripts/install-mwf.ts --root "/absolute/project" --harness codex --git-mode track
+```
+
+For tarball installations, repeat with `--package /path/to/new-bundle.tgz`.
+A shared runtime may serve multiple projects: rerun setup for each connected
+project and restart/reload its client after upgrading. Preserve `ignore` where
+that is the project's existing Git mode. Managed-file conflicts are reported
+for reconciliation; a failed setup retains the runtime and completed steps.
+
+## Detach a project
+
 
 ```sh
 mwf detach --root /project           # preview
@@ -197,6 +236,14 @@ Git-ignore protection, and leaves a shared Pi adapter installed. Resolve a
 reported conflict rather than overwriting user edits. Upgrade the installed
 package, then rerun setup to refresh executable paths and generated adapters.
 Setup is idempotent and refuses unmanaged configuration collisions.
+
+Detach removes the setup-owned connection/adapters; it does not uninstall the
+shared runtime or delete project memory. For the alternative global npm install,
+after detaching all projects that use it, `npm uninstall -g @zht7063/mwf` removes
+that global package. A runtime installed with `--prefix` is separate from the
+global npm package; retain it while any other project still uses it.
+
+See [the bundled adapter guide](adapters/README.md) for entrypoint ownership.
 
 ## Validation
 

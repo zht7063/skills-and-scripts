@@ -1,98 +1,128 @@
 # Installing skills from this repository
 
-Repository-level commands live under `scripts/`. They discover source packages
-under `skills/` and never place installation logic inside a distributable
-skill.
+Run all commands from the repository root with Node.js **22.16+**. Replace
+example paths with your own. The skill installer requires no npm dependencies;
+MWF installation also requires npm and may download build dependencies.
 
-Commands require Node 22.16+ and run directly from TypeScript without installing
-build dependencies. The former `python3 scripts/*.py` and Bash MWF installer
-entry points have been replaced by the TS commands below; flags and installation
-semantics are preserved. Update local shortcuts to the new invocation.
+## Choose an installation
+
+| Need | Recommended route | Result |
+| --- | --- | --- |
+| Manuscript audit, LaTeX layout or Mihomo guidance | `install-skill.ts NAME --mode copy` | Independent skill instructions and helpers |
+| Develop a skill in this checkout | `install-skill.ts NAME --mode link` | A live link to the source directory |
+| Project memory with local MCP | `install-mwf.ts --root PROJECT --harness codex --git-mode track` | Runtime, project rules, adapters and verified MCP connection |
+
+There is no Codex plugin manifest or marketplace in this repository.
 
 ## MWF: install the runtime and connect the project
-
-For Memory With Files, use [the MWF runtime guide](../packages/mwf/README.md). From the repository root, install and connect in one command (Node 22.16+ and npm required):
 
 ```sh
 node --experimental-strip-types scripts/install-mwf.ts --root "/absolute/project" --harness codex --git-mode track
 ```
 
-Add `--dry-run` to preview without writes; choose `--harness codex,pi` to include an already-installed Pi client. `--package /path/mwf.tgz` uses a bundled runtime instead of building the checkout.
+The project directory must already exist. Choose `--git-mode ignore` for
+local-only memory; preserve an existing project's mode. Add `--dry-run` for a
+plan without writes. Use `--harness pi` or `--harness codex,pi` if Pi is installed.
 
-`mwf setup --root /absolute/project --harness codex,pi --git-mode track` installs
-project bootstrap rules and Harness configuration, then verifies the connection.
-The generic Skill installer below installs only the light instruction adapter;
-it does not install the MWF executable, MCP connection or project bootstrap.
+The runtime defaults to `~/.local/share/mwf`. The installer prints an absolute
+CLI command; use it for subsequent operations because this route does not add
+`mwf` to your shell PATH. Setup registers the MCP server and probes bootstrap.
+Restart/reload the selected client and trust the project through its normal
+mechanism. Copying `memory-with-files` alone does not install the runtime or
+connect the project. Avoid installing another memory adapter into the same
+skill discovery scope.
 
-## Install one skill
+For offline bundles, verification, upgrade, migration and detach instructions,
+use [the MWF runtime guide](../packages/mwf/README.md).
 
-The default target is Codex and the default mode is a symbolic link:
+## Install an independent skill
 
-```bash
-node --experimental-strip-types scripts/install-skill.ts memory-with-files
+Copy mode is recommended for use: it remains usable if the checkout moves.
+Choose one command:
+
+```sh
+node --experimental-strip-types scripts/install-skill.ts auditing-manuscript-loopholes --mode copy
+node --experimental-strip-types scripts/install-skill.ts latex-layout-fixer --mode copy
+node --experimental-strip-types scripts/install-skill.ts mihomo-remote-linux --mode copy
 ```
 
-This keeps the repository source authoritative: edits made here are visible to
-new agent sessions without another copy step.
+Install for Pi or a custom destination:
 
-Install for Pi Agent:
-
-```bash
-node --experimental-strip-types scripts/install-skill.ts memory-with-files --agent pi
+```sh
+node --experimental-strip-types scripts/install-skill.ts latex-layout-fixer --agent pi --mode copy
+node --experimental-strip-types scripts/install-skill.ts latex-layout-fixer --target-dir "/path/to/skills" --mode copy
 ```
 
-The Pi profile respects `PI_CODING_AGENT_DIR` and defaults to
-`~/.pi/agent/skills`. The Codex profile respects `CODEX_HOME` and defaults to
-`~/.codex/skills`.
+| Target | Destination |
+| --- | --- |
+| Codex (default) | `$CODEX_HOME/skills`, otherwise `~/.codex/skills` |
+| Pi | `$PI_CODING_AGENT_DIR/skills`, otherwise `~/.pi/agent/skills` |
+| Custom | The exact directory supplied by `--target-dir` |
 
-Install a filtered standalone copy or use an explicit destination:
+Use `--agent` or `--target-dir`, not both. These are destinations used by this
+repository's installer. MWF setup uses project-scoped client configuration.
 
-```bash
-node --experimental-strip-types scripts/install-skill.ts memory-with-files --mode copy
-node --experimental-strip-types scripts/install-skill.ts memory-with-files --target-dir /path/to/skills
+Copy mode excludes root-level `evals/`, caches, bytecode and platform metadata;
+versioned tests and runtime helpers are retained. It does not install Python,
+TeX, SSH tools or other dependencies declared by a skill.
+
+For development, use `--mode link` (also the CLI default). Keep the source
+checkout at the same path; edits become visible through the link.
+
+## Verify installation
+
+Add `--dry-run` to an install command to inspect resolved paths before writing.
+After installation, check the printed destination contains `SKILL.md`, start a
+new client session and ask it to use the skill by name on a suitable task.
+Filesystem installation alone does not prove that the client discovered it.
+If unavailable, check the destination against the client's configured skill
+location and any project or client discovery settings.
+
+## Update and handle collisions
+
+Copy installations remain unchanged when the checkout changes. After updating
+the checkout, repeat the original command with `--replace`, keeping the target
+and mode the same:
+
+```sh
+node --experimental-strip-types scripts/install-skill.ts latex-layout-fixer --mode copy --replace
 ```
 
-Copy mode excludes root-level `evals/`, caches, bytecode, and local platform
-metadata. Versioned test source is retained, matching the repository's `.skill`
-packaging boundary. Use `--dry-run` to inspect resolved paths without writing.
+An occupied destination is otherwise refused. Replacement backs it up beneath
+`.skill-install-backups/` outside the active skills directory. An existing link
+to the same source is already installed; its contents follow checkout updates.
+Start a new client session after updating.
 
-## Updating and collisions
+## Uninstall an independent skill
 
-Installation refuses to overwrite an occupied destination. An existing link
-to the same source is treated as already installed. To replace another copy or
-link, use:
+Use the same target options as installation. Removal previews by default:
 
-```bash
-node --experimental-strip-types scripts/install-skill.ts memory-with-files --replace
+```sh
+node --experimental-strip-types scripts/uninstall-skill.ts latex-layout-fixer
+node --experimental-strip-types scripts/uninstall-skill.ts latex-layout-fixer --apply
+node --experimental-strip-types scripts/uninstall-skill.ts latex-layout-fixer --agent pi --apply
 ```
 
-The previous destination is moved to a timestamped backup beneath
-`.skill-install-backups/` outside the active skills directory before the new
-installation becomes visible.
+Only the exact installed skill is removed. Removing a linked installation
+preserves its source. For setup-managed MWF adapters, use `mwf detach` as
+explained in the runtime guide; this generic command does not detach MCP.
 
-## Uninstall
+## Validate source packages (development)
 
-Uninstall is a dry run unless `--apply` is supplied:
+Install repository development dependencies before full YAML and structural
+validation. This covers four independent skills, three bundled MWF adapters,
+JSON, local Markdown links and shared MWF instruction synchronization:
 
-```bash
-node --experimental-strip-types scripts/uninstall-skill.ts memory-with-files
-node --experimental-strip-types scripts/uninstall-skill.ts memory-with-files --apply
-node --experimental-strip-types scripts/uninstall-skill.ts memory-with-files --agent pi --apply
+```sh
+npm ci
+npm run validate
 ```
 
-The command resolves one exact skill name and refuses to recursively operate
-on a broad target.
+To also run TypeScript tests found inside skills:
 
-## Validate repository skills
-
-Run structural, metadata, JSON, and local Markdown-link checks for every skill:
-
-```bash
-node --experimental-strip-types scripts/validate-all.ts
-```
-
-Also run TypeScript test suites found in individual skills:
-
-```bash
+```sh
 node --experimental-strip-types scripts/validate-all.ts --tests
 ```
+
+Full runtime and repository checks are documented in the
+[root development guide](../README.md#development).

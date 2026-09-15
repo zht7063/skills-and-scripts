@@ -98,3 +98,16 @@ behavioral quality. Run `npm ci` before development validation.
 
 No Codex plugins are packaged here. Add plugin manifests and marketplace
 configuration only when plugin distribution is an explicit project requirement.
+
+## Installation documentation
+
+The root README routes readers to independent skills or the MWF runtime.
+`docs/installing-skills.md` owns generic destination, mode, update, removal and
+verification instructions. Each skill README provides its recommended command
+and runtime prerequisites; `SKILL.md` remains focused on agent execution.
+
+`packages/mwf/README.md` owns runtime/MCP installation and lifecycle instructions.
+`packages/mwf/adapters/README.md` explains setup-managed entrypoints. Keep links
+inside distributed skill READMEs local to the skill; describe checkout-only
+guides as repository paths so copied packages do not contain broken relative
+links. Runtime package links must resolve inside the packaged files.

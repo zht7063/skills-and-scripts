@@ -24,9 +24,8 @@ See [docs/repository-layout.md](docs/repository-layout.md) for the detailed stru
 - [`mihomo-remote-linux`](skills/mihomo-remote-linux/README.md) — A
   privacy-preserving, recovery-first guide for operating Mihomo on remote Linux
   hosts, from loopback proxy services to guarded system-wide TUN routing.
-
-- [`auditing-manuscript-loopholes`](skills/auditing-manuscript-loopholes/SKILL.md) — Read-only manuscript evidence and consistency audits.
-- [`latex-layout-fixer`](skills/latex-layout-fixer/SKILL.md) — Diagnose and repair LaTeX layout while preserving venue templates. Requires Python 3.10+, a TeX distribution with `latexmk`, and `pdftoppm` or `mutool`; rendering all pages also requires `pdfinfo`.
+- [`auditing-manuscript-loopholes`](skills/auditing-manuscript-loopholes/README.md) — Read-only manuscript evidence and consistency audits.
+- [`latex-layout-fixer`](skills/latex-layout-fixer/README.md) — Diagnose and repair LaTeX layout while preserving venue templates. Requires Python 3.10+, a TeX distribution with `latexmk`, and `pdftoppm` or `mutool`; rendering all pages also requires `pdfinfo`.
 
 ### Runtime adapters and plugins
 
@@ -41,29 +40,44 @@ examples and safety behavior.
 
 Generated review workspaces remain local and ignored.
 
-## MWF local runtime
+## Recommended installation
 
-MWF uses TypeScript as its sole runtime and requires Node.js 22.16+.
-Its installation includes deterministic project setup, not just Skill copying.
-Build and install the local package, then connect a project:
+Run commands from this repository's root with Node.js **22.16+**. Replace
+`/absolute/project` with an existing project directory.
 
-```bash
-npm ci --prefix packages/mwf
-npm run build --prefix packages/mwf
-npm install -g ./packages/mwf
-mwf setup --root /absolute/project --harness codex,pi --git-mode track
+### Independent skills
+
+For a standalone installation, copy the chosen skill into Codex:
+
+```sh
+node --experimental-strip-types scripts/install-skill.ts auditing-manuscript-loopholes --mode copy
 ```
 
-See [the runtime guide](packages/mwf/README.md) for packaging, migration,
-recovery guarantees and verification. The package has not been published to npm.
+Use `latex-layout-fixer` or `mihomo-remote-linux` in place of the name above.
+Add `--agent pi` for Pi. Contributors who want edits in this checkout to remain
+live can use `--mode link` and keep the checkout at its current path.
+The installer copies instructions and helpers; install the skill's external
+runtime tools separately.
 
-Existing Python-era schema-1 `.mwf` memory is readable without conversion.
-Before new writes, stop old writers and explicitly adopt the project with
-`mwf setup`, preserving its `track` or `ignore` Git mode. See
-[legacy compatibility and adoption](packages/mwf/README.md#migration-and-recovery).
+See [the installation guide](docs/installing-skills.md) for destinations,
+verification, updates and removal.
 
-Local `node_modules/` directories and build outputs are Git-ignored. Commit
-`package.json` and `package-lock.json`; restore dependencies with `npm ci`.
+### MWF memory and MCP
+
+Install the runtime and connect a project together (npm also required):
+
+```sh
+node --experimental-strip-types scripts/install-mwf.ts --root "/absolute/project" --harness codex --git-mode track
+```
+
+Choose `--git-mode ignore` for local-only memory, preserving the existing mode
+when upgrading. Add `--dry-run` to preview. Setup deploys the memory adapters,
+registers the local MCP server and probes the connection; copying the memory
+skill alone does not do this. Restart/reload the client afterward.
+
+See [the MWF runtime guide](packages/mwf/README.md) for offline bundles,
+verification, migration, upgrades and detaching projects. The npm package is
+not published to the registry. No Codex plugin installation is required.
 
 ## Development
 

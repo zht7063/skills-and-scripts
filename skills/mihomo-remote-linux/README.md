@@ -5,6 +5,20 @@ auditing, updating, repairing, or migrating Mihomo (Clash Meta) on a remote
 Linux server over SSH. It covers ordinary loopback proxy ports as well as the
 higher-risk system-wide TUN routing workflow.
 
+## Recommended installation
+
+From the repository root with Node.js **22.16+**:
+
+```sh
+node --experimental-strip-types scripts/install-skill.ts mihomo-remote-linux --mode copy
+```
+
+Add `--agent pi` for Pi or use `--mode link` for checkout development.
+Open a new client session and ask it to use `mihomo-remote-linux`.
+Repeat the command with `--replace` to update a copy. See the source checkout's
+`docs/installing-skills.md` for destinations, verification and removal.
+This installs the guide; deploying Mihomo to a server is a separate task.
+
 ## When to use it
 
 Use this skill for requests involving Mihomo or Clash Meta on a server:

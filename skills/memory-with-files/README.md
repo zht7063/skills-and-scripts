@@ -6,12 +6,19 @@ this Skill is the light trigger and policy adapter.
 
 ## Install and connect
 
-Follow the [runtime guide](../../packages/mwf/README.md). Build/install the local
-package, then run:
+Recommended: from the repository root with Node.js **22.16+** and npm, run:
 
 ```sh
-mwf setup --root /absolute/project --harness codex,pi --git-mode track
+node --experimental-strip-types scripts/install-mwf.ts --root "/absolute/project" --harness codex --git-mode track
 ```
+
+Use an existing project directory. Choose `--git-mode ignore` for local-only
+memory or `--harness codex,pi` to include an installed Pi client. Add `--dry-run`
+to preview. Restart/reload the client after installation.
+
+The source checkout's `packages/mwf/README.md` is the complete installation,
+verification, upgrade and detach guide. The installer prints an absolute CLI
+command; use that in place of `mwf` below unless it is on your PATH.
 
 Setup writes the managed AGENTS bootstrap block, registers the selected Harness,
 and verifies an actual MCP bootstrap call. Merely copying this Skill does not
@@ -45,9 +52,12 @@ should remain local. Setup refreshes managed rules and client configuration;
 it preserves existing records and user content outside managed blocks.
 Use `mwf init` instead when only memory initialization/adoption is needed.
 For older schemas and recovery details, see the
-[runtime migration guide](../../packages/mwf/README.md#migration-and-recovery).
+source checkout's `packages/mwf/README.md` migration section.
 
 ## Validate
+
+From the repository root after restoring both sets of development dependencies
+with `npm ci` and `npm ci --prefix packages/mwf`:
 
 ```sh
 npm test --prefix packages/mwf
