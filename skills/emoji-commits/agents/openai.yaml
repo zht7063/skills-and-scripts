@@ -1,0 +1,4 @@
+interface:
+  display_name: "Emoji Commits"
+  short_description: "Write Gitmoji-prefixed Conventional Commit messages"
+  default_prompt: "Use $emoji-commits to draft a commit message for the intended changes."

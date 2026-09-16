@@ -18,6 +18,7 @@ See [docs/repository-layout.md](docs/repository-layout.md) for the detailed stru
 
 ## Skills
 
+- [`emoji-commits`](skills/emoji-commits/README.md) — Draft and review Gitmoji-prefixed Conventional Commit messages, with emoji selection priorities and breaking-change guidance.
 - [`memory-with-files`](skills/memory-with-files/README.md) — Durable,
   project-scoped agent memory in `.mwf`, including scoped recall, structured
   decisions and incidents, handoffs, safe maintenance, and a local TypeScript CLI/MCP runtime.
@@ -26,7 +27,6 @@ See [docs/repository-layout.md](docs/repository-layout.md) for the detailed stru
   hosts, from loopback proxy services to guarded system-wide TUN routing.
 - [`auditing-manuscript-loopholes`](skills/auditing-manuscript-loopholes/README.md) — Read-only manuscript evidence and consistency audits.
 - [`latex-layout-fixer`](skills/latex-layout-fixer/README.md) — Diagnose and repair LaTeX layout while preserving venue templates. Requires Python 3.10+, a TeX distribution with `latexmk`, and `pdftoppm` or `mutool`; rendering all pages also requires `pdfinfo`.
-
 - [`travel-guide-html`](skills/travel-guide-html/README.md) — Chinese travel research, daily itineraries and linked maps delivered as offline HTML; includes a Python static checker.
 
 ### Runtime adapters and plugins
@@ -55,7 +55,8 @@ For a standalone installation, copy the chosen skill into Codex:
 node --experimental-strip-types scripts/install-skill.ts auditing-manuscript-loopholes --mode copy
 ```
 
-Use `latex-layout-fixer`, `mihomo-remote-linux` or `travel-guide-html` in place of the name above.
+Use `emoji-commits`, `latex-layout-fixer`, `mihomo-remote-linux` or
+`travel-guide-html` in place of the name above.
 Add `--agent pi` for Pi. Contributors who want edits in this checkout to remain
 live can use `--mode link` and keep the checkout at its current path.
 The installer copies instructions and helpers; install the skill's external
@@ -63,6 +64,23 @@ runtime tools separately.
 
 See [the installation guide](docs/installing-skills.md) for destinations,
 verification, updates and removal.
+
+### Emoji commit messages
+
+After installing `emoji-commits`, ask the agent to use `$emoji-commits` to draft
+or review a commit message. It uses a Gitmoji prefix followed by Conventional
+Commits structure:
+
+```text
+✨ feat(auth): support sign-in with email verification codes
+🔒️ fix(auth): prevent regular users from accessing admin endpoints
+```
+
+The skill follows user or repository language preferences and defines how to
+choose an emoji when categories overlap. It does not authorize Git mutations.
+Existing commit checks and release tools may need parsing rules for the emoji
+prefix. See the [skill guide](skills/emoji-commits/README.md) for installation
+and usage, and the [full convention](skills/emoji-commits/SKILL.md) for rules.
 
 ### MWF memory and MCP
 
@@ -97,7 +115,7 @@ npm run test:package --prefix packages/mwf
 ```
 
 `npm test` checks types for runtime, tooling and tests, runs repository and skill
-tests, validates all five standalone skills and three bundled adapters, checks MWF instruction synchronization, and runs MWF integration tests. Repository commands use
+tests, validates all standalone skills and three bundled adapters, checks MWF instruction synchronization, and runs MWF integration tests. Repository commands use
 `node --experimental-strip-types scripts/<command>.ts` and need no build step or
 third-party loader. The published-package layout continues to use compiled JS;
 TS scripts and development dependencies are not shipped. See
