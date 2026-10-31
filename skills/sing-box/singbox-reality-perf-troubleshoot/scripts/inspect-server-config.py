@@ -5,7 +5,7 @@ Reads the server's config.json from STDIN (the agent fetched it with `ssh ... ca
 written back to the server) and extracts the values the client profile must copy.
 
 Usage:
-  ssh -p $SSH_PORT -i $SSH_KEY $SSH_USER@$SERVER_IP "cat ${INSTALL_DIR}/config.json" \\
+  ssh -p $SSH_PORT -i $SSH_KEY $SSH_USER@$SERVER_IP "cat ${EXISTING_CONFIG_DIR}/config.json" \\
     | python3 inspect-server-config.py --env-out ./singbox-work/server-derived.env [--vless-tag TAG] [--user NAME]
 
 - Prints a REDACTED summary (secrets are never printed).
