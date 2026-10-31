@@ -1,0 +1,33 @@
+---
+name: singbox-troubleshooting
+description: Use when a sing-box node deployed with Docker (Shadowsocks 2022 / VLESS-REALITY) or its Clash / mihomo client misbehaves - no egress, wrong IP, 403 from IP-info APIs, empty Clash proxy list, DNS leak or Fake-IP confusion, WebRTC UDP showing a local IP, IPv6 questions, config check failures. Reference for a local agent using SSH and local tests.
+---
+
+# sing-box troubleshooting (symptom -> cause -> action -> verify)
+
+Local agent; remote reads via `ssh -p ${SSH_PORT} -i ${SSH_KEY} ${SSH_USER}@${SERVER_IP}`; never modify SSH/sshd settings; change one variable at a time; keep original files; do not claim unconfirmed root causes.
+
+| Symptom | Likely cause / hypothesis | Action | Verify |
+| --- | --- | --- | --- |
+| Client times out, server log shows nothing | cloud security group / host firewall blocks port | `singbox-firewall-ports`; `nc -zv ${SERVER_IP} ${SS_PORT}` locally; server `ss -lntup` | TCP connect succeeds; log shows inbound |
+| `docker compose ... check` fails | JSON error, wrong field, old image | read the error; re-render from template (`singbox-config-generate`), never hand-edit | `CONFIG_OK` |
+| SS works for TCP, UDP/WebRTC not | `"network": "tcp"` still in server config, or client `udp: false` | remove `network` from `ss-in` (template has none); set client `udp: true`; restart | server `ss -lntup` shows UDP `UNCONN` on `${SS_PORT}`; tcpdump sees UDP |
+| VLESS node fails, SS works | `REALITY_SNI`/`servername` mismatch (server `tls.server_name`, `reality.handshake.server` and client `servername` must be identical), wrong public key/short id, wrong `flow`, port 8443 blocked | compare client vs server values (server uses private key, client the **public** key); confirm flow is the same on both sides | server log shows `inbound/vless[vless-reality-in]` `[client-1]` |
+| VLESS flow mismatch (TCP connects and REALITY looks fine, but the connection closes/resets right after; log mentions flow/XTLS; SS works) | client `flow` differs from the server user's `flow` (`xtls-rprx-vision` vs empty or other). Fresh deploy: a hand-edited file; existing server: client was generated from the default instead of the server's value | **[REMOTE, read-only]** `ssh ... "cat ${INSTALL_DIR}/config.json"` piped to `python3 singbox-clash-config/scripts/inspect-server-config.py --env-out ./singbox-work/server-derived.env`; set `VLESS_FLOW` in `secrets.env` to the printed value (**empty** if the field is absent), re-render client configs only. **Never change the server's flow to match the client** (fresh deploy: re-render both from the same variable) | rendered client `flow` equals the server's; stage 7 passes for the VLESS node |
+| VLESS handshake errors/timeouts although port, UUID, keys, short id, flow all match | camouflage site `www.microsoft.com` unreachable from the VPS or rejected | follow the SNI fallback procedure (`singbox-config-generate`): `www.microsoft.com` -> `www.intel.com` -> `www.nvidia.com`; change server `config.json` **and** client `servername` together, `sing-box check`, restart, re-verify; one step at a time, stop after the third | `curl https://<sni>` works from the VPS; server log shows `inbound/vless[vless-reality-in]`; stage 7 passes |
+| Clash Verge node list empty | profile has only `proxies:` | ensure `proxy-groups` + `rules` referencing the group (template has them) | proxies page lists `PROXY` |
+| `curl api.ipinfo.io/lookup/...` -> 403 Unknown token | API needs a token (auth error) | use `api.ipify.org` / `ipinfo.io/ip` | returns `${SERVER_IP}` through the proxy |
+| Egress IP correct but DNS test shows Google resolvers | server resolves with its own `/etc/resolv.conf` (8.8.8.8/1.1.1.1 plain UDP 53); sing-box `direct` outbound uses system DNS | accepted risk in the recorded setup; stronger option = plan DoH/DoT for the server and re-verify with captures | document as "accepted", not "zero leak" |
+| `dig @1.1.1.1 google.com +notcp` returns `198.18.x.x` | Mihomo Fake-IP (local takeover) | none - expected | does **not** prove no leak or that DNS traversed the VPS |
+| DNS settings lost / duplicated | DNS in Global Extend Config vs profile; Runtime Config is read-only | keep `dns:` in the local profile, remove duplicates in Global Extend Config, re-activate | inspect Runtime Config for expected values |
+| WebRTC shows local public IP | UDP path not proxied (selected node without UDP, VLESS without `udp: true`/`packet-encoding: xudp`) | select node with `udp: true`; for VLESS use `packet-encoding: xudp`; re-test in the same browser | WebRTC UDP IP == `${SERVER_IP}` (original fix was not recorded; re-prove) |
+| IPv6 egress question | Mihomo `ipv6: false` only affects the client resolver, not macOS IPv6 | `curl -6 --max-time 8 -x http://127.0.0.1:${LOCAL_MIXED_PORT} https://api64.ipify.org` vs the same on the VPS | same address -> exits via VPS |
+| LAN/overlay (EasyTier) unreachable | private ranges not DIRECT | extend the DIRECT `IP-CIDR` rules (+ IPv6 ranges if needed) | `ping`/`curl` to LAN target works with proxy on |
+| iOS Stash / Shadowrocket import fails | not fully Mihomo-compatible | generate an adapted client config separately; test node protocol, DNS, rules, VPN takeover | record differences |
+| Container not running after reboot | not enabled / compose problem | `docker inspect sing-box --format '{{.HostConfig.RestartPolicy.Name}}'` should be `unless-stopped`; `systemctl is-enabled docker` | `docker compose ps` Up |
+| Container logs growing | `LOG_LEVEL=info` logs every connection | rotation is configured (10m x 3); to quiet: `warn`, re-render, `check`, restart | `docker inspect ... LogConfig` |
+
+General principles
+- TCP egress IP correct != DNS leak-free; UDP packets in a capture != application-layer UDP success; a screenshot of a homepage is not proof of proxying.
+- `docker compose logs -f` is for humans (Ctrl+C leaves the container running); agents use `--tail`.
+- Never paste real keys in chats, issues, screenshots or repos; if exposed, rotate (`singbox-maintenance` section 4).
