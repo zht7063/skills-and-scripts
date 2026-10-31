@@ -61,7 +61,11 @@ Expected: packets from the local machine's public IP to `${SERVER_IP}:${SS_PORT}
 
 ## 3. Application-layer UDP and WebRTC check
 
-- **UDP (SS)**: with `udp: true`, run a non-DNS UDP application test if available (e.g. a controlled UDP echo/QUIC target). Network-layer proof: the server `tcpdump` above shows packets from the client during the test; bidirectional capture shows both directions. Capture alone is not proof that real application requests were decrypted and forwarded.
+- **UDP (SS)** (**[LOCAL]**, scripted): with the local client running and `udp: true`, run
+  ```bash
+  python3 $SB_DIR/singbox-udp/scripts/udp-app-test.py --socks 127.0.0.1:${LOCAL_MIXED_PORT} --expect-ip ${SERVER_IP}
+  ```
+  It opens a SOCKS5 UDP ASSOCIATE on the mixed port and sends real datagrams: (1) a DNS-over-UDP A query for example.com to 1.1.1.1 (fallbacks 8.8.8.8, 9.9.9.9) - pass = same ID, QR=1, RCODE 0, >=1 answer; (2) a STUN Binding request to stun.l.google.com:19302 (fallbacks stun.cloudflare.com:3478, stun.nextcloud.com:3478) - pass = the reported public IP equals `${SERVER_IP}`. `--compare-direct` is **optional** (same STUN without the proxy; meaningless behind a transparent proxy/NAT pool); `--only dns|stun` runs one test. Exit 0 pass, 1 test failed, 2 UDP ASSOCIATE itself refused. Pick the SS node in the client first (the script tests whatever node is selected). Network-layer proof: the server `tcpdump` above shows packets from the client during the test; bidirectional capture shows both directions. Capture alone is not proof that real application requests were decrypted and forwarded.
 - **WebRTC UDP** (**[LOCAL]**, browser, only with TUN/system proxy): an IP other than `${SERVER_IP}` in a WebRTC test means UDP is not proxied - confirm the selected node has `udp: true` and retest in the same browser. (For the VLESS node: `udp: true` **and** `packet-encoding: xudp`, see section 4.)
 - Start the local client per base step 7 (`$SB_DIR/singbox-minimal-deploy/scripts/run-local-client.sh ...`) and read server logs read-only with `$SSH "cd ${REMOTE_DIR} && tail -n 40 logs/sing-box.log"`.
 
@@ -79,8 +83,8 @@ UDP application-layer end-to-end is not strictly proven in the recorded deployme
 
 ## TODO (gaps - not invented here)
 
-- TODO: no scripted UDP application test exists yet (the existing notes only say "a controlled UDP echo/QUIC target if available"); add a concrete, verified procedure once yubai decides the test target.
 - TODO: the exact setting that fixed the WebRTC local-IP exit in the recorded setup was not recorded; this skill only says to keep `udp: true` (+ `xudp` for VLESS) and re-test.
+- TODO: the scripted test covers DNS and STUN only; QUIC/HTTP3 end-to-end and a UDP echo against your own server are not scripted.
 - TODO: UDP-specific tuning (timeouts, QUIC/HTTP3 handling) has no source material in the existing skills.
 
 ## Verification summary (report to the user, no secrets)
@@ -90,5 +94,6 @@ UDP application-layer end-to-end is not strictly proven in the recorded deployme
 | server UDP listener on `${SS_PORT}` (`UNCONN`) | | n/a (TCP only) |
 | firewall + security group allow UDP | | n/a |
 | client `udp: true` | | `udp: true` + `xudp` |
+| `udp-app-test.py` DNS + STUN pass, STUN IP == server | | n/a (SS node only) |
 | tcpdump sees UDP from client | | |
 | WebRTC UDP IP == server | | |
