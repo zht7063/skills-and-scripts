@@ -245,6 +245,13 @@ $R/scripts/perf-baseline.sh http://127.0.0.1:${LOCAL_MIXED_PORT} 20
 ```
 **[LOCAL].** 20 sequential requests, 1 s apart -> success rate, mean/median/p95/min/max. Recorded reference (one mobile-hotspot run, not conclusive): SS 2022 ~401 ms mean / 100 % success; VLESS+REALITY ~545 ms mean / 100 % success. For a fair comparison alternate A->B->B->A, same network, same target; do not generalise from a single run.
 
+### Throughput (optional)
+
+```bash
+$R/scripts/throughput-test.sh -x http://127.0.0.1:${LOCAL_MIXED_PORT} -n 3 -b 10000000
+```
+**[LOCAL].** Downloads the same file `-n` times through the local proxy and directly (`curl -x` vs `curl --noproxy '*'`) and prints MB/s per run, averages and the proxy/direct ratio. Endpoints, tried in order until one answers through the proxy: `speed.cloudflare.com/__down?bytes=N`, `proof.ovh.net/files/10Mb.dat`, `speedtest.tele2.net/10MB.zip`. `--iperf HOST[:PORT]` is **optional** (needs `iperf3` locally and an iperf3 server you control; direct TCP only, skipped if iperf3 is missing). Single samples are noisy: use `-n 5`, alternate SS/VLESS node selection between runs, ignore differences under ~20 %. PASS only means the proxy path delivered data. Do not set `*_proxy` variables for this script.
+
 ## Part D - troubleshooting and maintenance
 
 - **Diagnose with `references/troubleshooting.md`** (symptom -> cause -> action -> verify; covers firewall/port, `check` failures, UDP/WebRTC, VLESS failures, flow mismatch, SNI, Clash empty list, IP-info API 403, DNS/Fake-IP, IPv6, LAN/overlay, iOS clients, reboot, log growth). Change one variable at a time, keep originals, never touch SSH settings.
@@ -253,7 +260,7 @@ $R/scripts/perf-baseline.sh http://127.0.0.1:${LOCAL_MIXED_PORT} 20
 
 ## TODO (gaps)
 
-- TODO: no throughput/bandwidth test or long-running availability monitoring is defined (only the 20-request latency baseline above).
+- TODO: long-running availability monitoring is not defined (the latency baseline and the throughput test above are one-shot).
 
 ## Verification summary
 
