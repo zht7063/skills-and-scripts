@@ -22,7 +22,7 @@ You are a **local agent** on the user's machine. You are given remote server inf
 | SSH user | `SSH_USER` | usually root |
 | SSH private key path (local) | `SSH_KEY` | key auth; if the user only has a password, ask them to set up a key/ssh-agent themselves - do not store passwords |
 | REALITY camouflage site | `REALITY_SNI` | **default `www.microsoft.com`** (user's decision); fallbacks in order only if real testing fails: `www.intel.com`, then `www.nvidia.com` |
-| Optional overrides | `SS_PORT` 8388, `VLESS_PORT` 8443, `INSTALL_DIR` /opt/sing-box, `LOG_LEVEL` info, `VLESS_FLOW` xtls-rprx-vision | defaults come from the recorded deployment |
+| Optional overrides | `SS_PORT` 8388, `VLESS_PORT` 8443, `INSTALL_DIR` /opt/sing-box, `LOG_LEVEL` info, `VLESS_FLOW` xtls-rprx-vision (same variable renders server and client) | defaults come from the recorded deployment |
 | Local tools | `ssh`, `scp`, `openssl`, `python3` (+ PyYAML for validation), `curl`, `nc`; `mihomo` or `sing-box` for stage 7 | ask before installing anything |
 
 Template for all variables: `templates/inputs.env.example` -> copy to `./singbox-work/secrets.env` (mode 600, never committed). Generated secrets use variables `SS_PASSWORD VLESS_UUID REALITY_PRIVATE_KEY REALITY_PUBLIC_KEY SHORT_ID`.
@@ -33,7 +33,8 @@ Template for all variables: `templates/inputs.env.example` -> copy to `./singbox
 2. **Never change SSH configuration** on the server (sshd_config, authorized_keys, SSH port, SSH firewall rules) and never enable a default-deny firewall policy.
 3. Secrets only in `./singbox-work/` (chmod 700 dir, 600 files, gitignored). Never put real IPs/passwords/keys into skill files, git, chat logs or screenshots. Do not print secret values in your reports.
 4. Each stage ends with a verification checklist. **Do not start the next stage until every box is ticked.** Report failures with the failing command and its output (redacted).
-5. One change at a time; back up before modifying anything that already exists on the server; destructive or off-box actions need user confirmation.
+5. **Client follows server for `flow`.** Never change a server's `flow` to match a client; on an existing server copy its actual flow (empty if absent) into the client first.
+6. One change at a time; back up before modifying anything that already exists on the server; destructive or off-box actions need user confirmation.
 
 ## Stages (run in order)
 
@@ -57,6 +58,17 @@ Re-runs: stages are idempotent as written (mkdir -p, config backed up before ove
 - Default: `REALITY_SNI=www.microsoft.com` for server `tls.server_name`, server `reality.handshake.server` (`handshake.server_port` 443) and the client `servername` - all three always identical.
 - Keep it unless **real testing fails** (VLESS handshake failure/timeouts after port, UUID, keys, short id and flow were ruled out - see `singbox-local-verify` "When to switch the REALITY SNI"). Then switch in this order: `www.intel.com`, then `www.nvidia.com`. If all three fail, stop and report; never try other sites.
 - Switching changes **both** the server `config.json` and the Clash `servername` together: set the new `REALITY_SNI` in `secrets.env` -> re-render server config and `clash.yaml` (credentials unchanged) -> back up + upload -> `sing-box check` (must pass) -> `docker compose restart` -> re-run stage 7 for both nodes. Full commands: `singbox-config-generate`, section "SNI fallback procedure".
+
+## Existing server path (server NOT deployed by these skills)
+
+Use this instead of stages 2-5 when the user already has a working sing-box server and only wants client profiles / verification. **Do not change the server in any way.**
+
+1. Stage 1 (`singbox-server-prep`) read-only parts only: SSH works, find where `config.json` lives (ask the user; default `${INSTALL_DIR}` = `/opt/sing-box`).
+2. **[REMOTE, read-only] Before generating any client config**, check the server's actual flow and other client-relevant values with `scripts/inspect-server-config.py` (see `singbox-clash-config`, "Flow rule"). Copy `VLESS_FLOW` from the server into `secrets.env` - **empty if the user has no `flow` field**. Also copy UUID, short id, ports, SS method/password and `REALITY_SNI` (= server `tls.server_name`) from the same output; the REALITY *public* key comes from the user.
+3. **Never modify the server's `flow` (or any server setting) to match the client.** If a mismatch appears later, the client is changed, not the server. The SNI fallback procedure does not apply to an existing server unless the user explicitly asks to change the server.
+4. Stage 6 `singbox-clash-config` -> stage 7 `singbox-local-verify` (it re-checks flow if the VLESS node fails). Report the flow value that was copied and its source.
+
+Fresh deploys (stages 1-8): server and client `flow` are rendered from the **same `VLESS_FLOW`** variable (default `xtls-rprx-vision`), so they always match; never edit `flow` by hand in rendered files.
 
 ## Final deliverable and report
 

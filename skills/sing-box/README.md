@@ -12,7 +12,7 @@ All skills use placeholders (`${SERVER_IP}`, `${SS_PASSWORD}`, `${VLESS_UUID}`, 
 | [`singbox-config-generate`](singbox-config-generate/SKILL.md) | 3 - generate SS key, UUID, REALITY keypair, short id; render server `config.json` (templates + scripts) |
 | [`singbox-compose-run`](singbox-compose-run/SKILL.md) | 4 - upload, `sing-box check`, `docker compose up`, listener/log checks (`compose.yaml` template) |
 | [`singbox-firewall-ports`](singbox-firewall-ports/SKILL.md) | 5 - host firewall (read-only by default), cloud security group, reachability from local |
-| [`singbox-clash-config`](singbox-clash-config/SKILL.md) | 6 - render + validate the Clash/mihomo YAML (template + validator) |
+| [`singbox-clash-config`](singbox-clash-config/SKILL.md) | 6 - render + validate the Clash/mihomo YAML (template + validator); read-only `inspect-server-config.py` for existing servers (copy the server's real flow) |
 | [`singbox-local-verify`](singbox-local-verify/SKILL.md) | 7 - local client tests: egress IP, 204, UDP/DNS/IPv6/WebRTC notes, perf baseline |
 | [`singbox-maintenance`](singbox-maintenance/SKILL.md) | 8 - backup, log rotation, update + rollback tag, credential rotation |
 | [`singbox-troubleshooting`](singbox-troubleshooting/SKILL.md) | symptom -> cause -> action -> verify reference |

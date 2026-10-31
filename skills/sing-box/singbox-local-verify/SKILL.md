@@ -22,6 +22,12 @@ description: Use when a local agent must prove that a deployed sing-box server (
 
 Set `ENV_FILE=./singbox-work/secrets.env` (default).
 
+## A0. Flow check before/after generating client configs (VLESS node)
+
+- **Fresh deploy:** server and client `flow` come from the same `VLESS_FLOW` variable - nothing to reconcile; just confirm `grep -n flow ./singbox-work/clash.yaml ./singbox-work/config.json` shows the same value.
+- **Existing server (not deployed by these skills):** the client flow must be copied from the server's real `config.json` **before** any client config is generated (**[REMOTE, read-only]** `scripts/inspect-server-config.py` in `singbox-clash-config`, "Flow rule"). Empty if the server user has no `flow` field. If the VLESS node fails here, re-run that read-only check and compare with `./singbox-work/clash.yaml`; if they differ, fix **the client** (`VLESS_FLOW` in `secrets.env`, re-render, re-test). **Never edit the server's flow to match the client.**
+- Typical flow-mismatch symptom: TCP connects, server log shows an error about flow/`XTLS`/`unexpected` or the connection is closed right after the REALITY handshake, while SS works.
+
 ## A. Local client = mihomo (primary)
 
 1. **[LOCAL]** static check: `mihomo -t -d singbox-work -f singbox-work/clash.yaml` (if available).

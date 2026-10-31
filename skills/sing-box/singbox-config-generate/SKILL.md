@@ -13,6 +13,10 @@ description: Use when a local agent must generate the credentials (Shadowsocks 2
 
 From `./singbox-work/secrets.env` (see `singbox-deploy-full/templates/inputs.env.example`): `SERVER_IP SSH_PORT SSH_USER SSH_KEY`, `SS_PORT` (8388), `SS_METHOD` (`2022-blake3-aes-128-gcm`), `VLESS_PORT` (8443), `VLESS_FLOW` (`xtls-rprx-vision`), `LOG_LEVEL` (`info`), and **`REALITY_SNI`** (default `www.microsoft.com`).
 
+### VLESS flow: one variable for server and client
+
+`flow` in the server `config.json` and in every client config (Clash, local sing-box client) is rendered from the **same `VLESS_FLOW`** variable (default `xtls-rprx-vision`), so they always match on a fresh deploy. Do not edit `flow` by hand in any rendered file; change `VLESS_FLOW` and re-render all. (An *existing* server not deployed by these skills follows the "existing server" path in `singbox-deploy-full`: the client copies the server's flow, never the reverse.)
+
 ### REALITY_SNI: default `www.microsoft.com`, with an ordered fallback
 
 The user decided: **`REALITY_SNI=www.microsoft.com` by default**. It is a real TLS 1.3 / h2 public site that the server impersonates. One value is used in three places and they must always be identical:

@@ -4,11 +4,16 @@
 Usage: render.py TEMPLATE OUTPUT [--env-file secrets.env]
 
 - Only ${UPPER_CASE} tokens are substituted; every other character is copied verbatim.
-- Fails (exit 1) if any ${VAR} used by the template is unset or still a placeholder
+- Fails (exit 1) if any ${VAR} used by the template is unset, empty or still a placeholder
   such as TODO_*, so a half-filled config can never be produced silently.
+  Single exception: VLESS_FLOW may be EMPTY, but only when it is set explicitly
+  (a line `VLESS_FLOW=` in the env file). An empty flow is a legitimate value: it is what an
+  existing server without a `flow` field uses. If VLESS_FLOW is not set at all it still fails.
 - The output file is created with mode 600 (it contains secrets).
 """
 import os, re, sys
+
+ALLOW_EMPTY = {"VLESS_FLOW"}
 
 def load_env(path):
     env = {}
@@ -39,6 +44,8 @@ def main():
     def sub(m):
         name = m.group(1)
         val = env.get(name)
+        if val == "" and name in ALLOW_EMPTY:
+            return ""
         if val is None or val == "" or val.startswith("TODO"):
             missing.append(name)
             return m.group(0)

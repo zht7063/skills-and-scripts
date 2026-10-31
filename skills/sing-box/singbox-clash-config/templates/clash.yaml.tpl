@@ -44,7 +44,7 @@ proxies:
     network: tcp
     tls: true
     udp: true
-    flow: ${VLESS_FLOW}
+    flow: "${VLESS_FLOW}"
     packet-encoding: xudp
     servername: ${REALITY_SNI}
     client-fingerprint: chrome

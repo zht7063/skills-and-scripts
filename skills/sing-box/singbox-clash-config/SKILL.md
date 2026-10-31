@@ -9,6 +9,25 @@ description: Use when a local agent must produce a ready-to-import Clash / Mihom
 
 **Render from `templates/clash.yaml.tpl`. Do not rewrite the YAML by hand; do not use the REALITY *private* key on the client (only `REALITY_PUBLIC_KEY`).** `REALITY_SNI` (default `www.microsoft.com`; fallbacks `www.intel.com` then `www.nvidia.com` only after real-test failure) must equal the value in the server config (`servername` here = `tls.server_name` and `reality.handshake.server` on the server). If the SNI is switched, the server config and this file must be re-rendered together (`singbox-config-generate`, "SNI fallback procedure").
 
+## Flow rule (VLESS `flow`) - the client must always equal the server
+
+- **Fresh deploy (by these skills):** the server `config.json` (`singbox-config-generate`) and this client profile (and the local-verify client) are rendered from the **same variable `VLESS_FLOW`** (default `xtls-rprx-vision`) in `secrets.env`, so they always match. Never hand-edit `flow` in either file; change `VLESS_FLOW` and re-render both.
+- **Existing server (NOT deployed by these skills):** the server is the source of truth. **Before generating any client config**, do the read-only check below and copy the server's actual flow into `VLESS_FLOW` - **empty if the user has no `flow` field**. **Never modify the server's `flow` (or anything else on it) to match the client**; a mismatch is fixed on the client side only.
+
+  1. **[REMOTE, read-only]** fetch and extract (nothing is written on the server; `INSTALL_DIR` = where the user says config.json lives, default `/opt/sing-box`):
+     ```bash
+     ssh -p ${SSH_PORT} -i ${SSH_KEY} ${SSH_USER}@${SERVER_IP} "cat ${INSTALL_DIR}/config.json" \
+       | python3 scripts/inspect-server-config.py --env-out ./singbox-work/server-derived.env
+     ```
+     It prints a redacted summary, e.g. `VLESS_FLOW = 'xtls-rprx-vision'` or `VLESS_FLOW = ''   (field absent/empty -> client flow must be EMPTY)`. Several VLESS inbounds/users -> it stops; re-run with `--vless-tag` / `--user`.
+  2. **[LOCAL]** merge into `secrets.env` (derived values replace the defaults; `VLESS_FLOW=` with an empty value is valid and is accepted by `render.py`):
+     ```bash
+     grep -v -E '^(VLESS_FLOW|VLESS_UUID|VLESS_PORT|REALITY_SNI|SHORT_ID|SS_PORT|SS_METHOD|SS_PASSWORD)=' ./singbox-work/secrets.env > ./singbox-work/.tmp \
+       && cat ./singbox-work/.tmp ./singbox-work/server-derived.env > ./singbox-work/secrets.env && rm ./singbox-work/.tmp && chmod 600 ./singbox-work/secrets.env
+     ```
+     `REALITY_PUBLIC_KEY` is not in a server config (only the private key is) - take it from the user.
+  3. Render (step 1 below). **Verify:** `grep -n 'flow' ./singbox-work/clash.yaml` shows exactly the value printed in step 1 (`flow: ""` for empty).
+
 ## Template: `templates/clash.yaml.tpl`
 
 ```yaml
@@ -45,7 +64,7 @@ proxies:
     network: tcp
     tls: true
     udp: true
-    flow: ${VLESS_FLOW}
+    flow: "${VLESS_FLOW}"
     packet-encoding: xudp
     servername: ${REALITY_SNI}
     client-fingerprint: chrome
@@ -91,6 +110,7 @@ Design notes from the recorded setup:
 
 ## Verification summary
 
+- [ ] `flow` in the profile equals the server's flow (fresh deploy: same `VLESS_FLOW` rendered into both; existing server: copied from the read-only check, empty if absent)
 - [ ] `validate_clash.py` prints `OK` (no `TODO`, no `${...}` left)
 - [ ] both proxies present, group `PROXY` references them, last rule `MATCH,PROXY`
 - [ ] functional proof is stage 7 (`singbox-local-verify`)
