@@ -22,9 +22,9 @@ Local agent (`[LOCAL]` = your machine, `[REMOTE]` = `ssh -p ${SSH_PORT} -i ${SSH
 | LAN/overlay (EasyTier) unreachable | private ranges not DIRECT | extend the DIRECT `IP-CIDR` rules (+ IPv6 ranges if needed) | `ping`/`curl` to LAN target works with proxy on |
 | iOS Stash / Shadowrocket import fails | not fully Mihomo-compatible | generate an adapted client config separately; test node protocol, DNS, rules, VPN takeover | record differences |
 | Container not running after reboot | not enabled / compose problem | `docker inspect sing-box --format '{{.HostConfig.RestartPolicy.Name}}'` should be `unless-stopped`; `systemctl is-enabled docker` | `docker compose ps` Up |
-| Container logs growing | `LOG_LEVEL=info` logs every connection | rotation is configured (10m x 3); to quiet: `warn`, re-render, `check`, restart | `docker inspect ... LogConfig` |
+| Log file growing / disk use | `LOG_LEVEL=info` logs every connection | `${REMOTE_DIR}/logs/sing-box.log` is rotated by the `log-rotate` service (>= 10 MiB, 3 gz archives); check it is Up; to quiet: `warn`, re-render, `check`, restart | `ls -l ${REMOTE_DIR}/logs`; `docker logs sing-box-logrotate --tail=3`; base skill "Logs and rotation" |
 
 General principles
 - TCP egress IP correct != DNS leak-free; UDP packets in a capture != application-layer UDP success; a screenshot of a homepage is not proof of proxying.
-- `docker compose logs -f` is for humans (Ctrl+C leaves the container running); agents use `--tail`.
+- sing-box logs are in `${REMOTE_DIR}/logs/sing-box.log` (`tail -n`); startup/fatal errors only in `docker compose logs --tail=30 sing-box`. Agents never leave `-f` running.
 - Never paste real keys in chats, issues, screenshots or repos; if exposed, rotate (`maintenance.md` section 4).

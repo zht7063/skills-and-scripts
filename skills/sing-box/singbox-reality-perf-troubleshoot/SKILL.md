@@ -129,7 +129,7 @@ Security: `secrets.env` and `config.json` contain secrets (mode 600, local only,
 $SSH "cd ${REMOTE_DIR} && cp config.json backups/config.json.$(date +%Y%m%d-%H%M%S)"
 $SCP singbox-work/config.json ${SSH_USER}@${SERVER_IP}:${REMOTE_DIR}/config.json
 $SSH "chmod 600 ${REMOTE_DIR}/config.json && cd ${REMOTE_DIR} && docker compose run --rm sing-box -c /etc/sing-box/config.json check && echo CONFIG_OK"
-$SSH "cd ${REMOTE_DIR} && docker compose restart && sleep 3 && docker compose ps && docker compose logs --tail=20"
+$SSH "cd ${REMOTE_DIR} && docker compose restart && sleep 3 && docker compose ps && tail -n 20 logs/sing-box.log"
 $SSH "ss -lntup | grep -E ':(${SS_PORT}|${VLESS_PORT})\b'"
 ```
 Gate: `CONFIG_OK` before restart (if `check` fails, fix the inputs locally and re-render - do not edit on the server; the previous config is in `backups/`); log shows the TCP `${VLESS_PORT}` listener and `sing-box started`. Expected listeners: `tcp LISTEN 0.0.0.0:${SS_PORT}`, `udp UNCONN 0.0.0.0:${SS_PORT}`, `tcp LISTEN 0.0.0.0:${VLESS_PORT}`.
@@ -171,7 +171,7 @@ Use the base skill's scripts; test each node separately and record pass/fail per
      $SB_DIR/singbox-minimal-deploy/scripts/run-local-client.sh sing-box ./singbox-work/client-$NODE.json
    done
    ```
-3. **[REMOTE, read-only]** server-side corroboration while a node is under test: `$SSH "cd ${REMOTE_DIR} && docker compose logs --tail=40"`. Expected for VLESS: `inbound/vless[vless-reality-in]`, `[client-1]` and `outbound/direct` for the test domains (e.g. `api.ipify.org`). A node whose requests never appear in the server log was not actually used.
+3. **[REMOTE, read-only]** server-side corroboration while a node is under test: `$SSH "cd ${REMOTE_DIR} && tail -n 40 logs/sing-box.log"`. Expected for VLESS: `inbound/vless[vless-reality-in]`, `[client-1]` and `outbound/direct` for the test domains (e.g. `api.ipify.org`). A node whose requests never appear in the server log was not actually used.
 4. UDP / WebRTC for the VLESS node: `singbox-udp` section 3 (re-run).
 
 Report as a table (no secrets):
@@ -232,7 +232,7 @@ Switching the SNI changes **server and clients together**; doing only one side b
    $SSH "cd ${REMOTE_DIR} && cp config.json backups/config.json.$(date +%Y%m%d-%H%M%S)"
    $SCP ./singbox-work/config.json ${SSH_USER}@${SERVER_IP}:${REMOTE_DIR}/config.json
    $SSH "chmod 600 ${REMOTE_DIR}/config.json && cd ${REMOTE_DIR} && docker compose run --rm sing-box -c /etc/sing-box/config.json check && echo CONFIG_OK"
-   $SSH "cd ${REMOTE_DIR} && docker compose restart && sleep 3 && docker compose ps && docker compose logs --tail=20"
+   $SSH "cd ${REMOTE_DIR} && docker compose restart && sleep 3 && docker compose ps && tail -n 20 logs/sing-box.log"
    ```
    Gate: `CONFIG_OK` before restart; log shows the TCP `${VLESS_PORT}` listener and `sing-box started`.
 4. **[LOCAL]** re-import/refresh `clash.yaml` in the client and re-run A7 for **both** nodes. Record which SNI finally works in `singbox-work/NOTES.md` (no secrets).

@@ -15,13 +15,14 @@ $SSH "cd ${REMOTE_DIR} && mkdir -p backups && cp compose.yaml backups/compose.ya
 ```
 `config.json` contains secrets: never upload it to a public repository. This is a same-host backup, not an off-site one; if the user wants durability, copy it **encrypted** off the server (ask first) and/or keep the rendered files in the local gitignored `singbox-work/` (`scp -P ${SSH_PORT} -i ${SSH_KEY} ${SSH_USER}@${SERVER_IP}:${REMOTE_DIR}/config.json ./singbox-work/config.server-copy.json`, then `chmod 600`).
 
-## 2. Log rotation + restart policy (verify; already in compose template)
+## 2. Log files, rotation + restart policy (verify; already in compose template)
 
 **[REMOTE]**
 ```bash
-$SSH "cd ${REMOTE_DIR} && docker compose config -q && docker inspect sing-box --format '{{json .HostConfig.LogConfig}}' && docker inspect sing-box --format '{{.HostConfig.RestartPolicy.Name}}'"
+$SSH "cd ${REMOTE_DIR} && docker compose config -q && ls -l logs && docker compose ps && docker logs sing-box-logrotate --tail=3"
+$SSH "docker inspect sing-box --format '{{json .HostConfig.LogConfig}}' && docker inspect sing-box --format '{{.HostConfig.RestartPolicy.Name}}'"
 ```
-Expected: `{"Type":"json-file","Config":{"max-file":"3","max-size":"10m"}}` and `unless-stopped`. If missing, re-upload `singbox-minimal-deploy/templates/compose.yaml` and run `docker compose up -d`.
+Expected: `logs/sing-box.log` (+ `.N.gz` archives) in `/opt/sing-box/logs`, both `sing-box` and `sing-box-logrotate` Up, the sidecar printing `rotate-logs: watching ...`, `{"Type":"json-file","Config":{"max-file":"3","max-size":"10m"}}` (stdout/stderr safety net) and `unless-stopped`. If something is missing, back up and re-upload `singbox-minimal-deploy/templates/compose.yaml` + `rotate-logs.sh`, `mkdir -p logs`, then `docker compose up -d`. Design and the forced-rotation test: base skill "Logs and rotation".
 No Docker `HEALTHCHECK` is used on purpose: compose does not restart on `unhealthy`, and a port check does not prove end-to-end proxying. Rely on restart policy, logs and real client tests (base step 7).
 
 ## 3. Update with rollback tag
@@ -36,11 +37,11 @@ Check: `sing-box:rollback` is listed and its image ID prefix equals the current 
 
 Update (REMOTE), only after the rollback tag exists:
 ```bash
-$SSH "cd ${REMOTE_DIR} && docker compose pull && docker compose run --rm sing-box -c /etc/sing-box/config.json check && docker compose up -d && docker compose ps && docker compose logs --tail=20"
+$SSH "cd ${REMOTE_DIR} && docker compose pull && docker compose run --rm sing-box -c /etc/sing-box/config.json check && docker compose up -d && docker compose ps && tail -n 20 logs/sing-box.log"
 ```
 Gate: `check` must pass with the **new** image before `up -d`. Then re-run the local verification (base step 7 / `SKILL.md` A7) for both nodes.
 
-Rollback (REMOTE) if broken: set `image: sing-box:rollback` in `compose.yaml` (edit locally in the template copy, re-upload) and `docker compose up -d`; restore `backups/config.json` if the config format changed incompatibly. Note: **the rollback procedure itself has not been exercised in the recorded deployment** - test it on a maintenance window before relying on it. Do not `docker image prune` while the rollback tag matters.
+Rollback (REMOTE) if broken: set `image: sing-box:rollback` on BOTH services (`sing-box` and `log-rotate`) in `compose.yaml` (edit locally in the template copy, re-upload) and `docker compose up -d`; restore `backups/config.json` if the config format changed incompatibly. Note: **the rollback procedure itself has not been exercised in the recorded deployment** - test it on a maintenance window before relying on it. Do not `docker image prune` while the rollback tag matters.
 
 ### Known-stable version 1.14.4 (rollback when `latest` has problems)
 
@@ -53,7 +54,7 @@ Use when a key was exposed (screenshots, chat, repo). Generate new values (`sing
 ## 5. Routine checks
 
 ```bash
-$SSH "cd ${REMOTE_DIR} && docker compose ps && docker compose logs --tail=50"
+$SSH "cd ${REMOTE_DIR} && docker compose ps && tail -n 50 logs/sing-box.log"
 $SSH "ss -lntup | grep -E ':(${SS_PORT}|${VLESS_PORT})\b'"
 ```
 Open items in the source notes (not yet done): crash-recovery test, off-site encrypted backup, real update + rollback drill, long-running availability monitoring, security-group source restriction.

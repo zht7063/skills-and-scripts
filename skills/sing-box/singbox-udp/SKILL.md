@@ -63,7 +63,7 @@ Expected: packets from the local machine's public IP to `${SERVER_IP}:${SS_PORT}
 
 - **UDP (SS)**: with `udp: true`, run a non-DNS UDP application test if available (e.g. a controlled UDP echo/QUIC target). Network-layer proof: the server `tcpdump` above shows packets from the client during the test; bidirectional capture shows both directions. Capture alone is not proof that real application requests were decrypted and forwarded.
 - **WebRTC UDP** (**[LOCAL]**, browser, only with TUN/system proxy): an IP other than `${SERVER_IP}` in a WebRTC test means UDP is not proxied - confirm the selected node has `udp: true` and retest in the same browser. (For the VLESS node: `udp: true` **and** `packet-encoding: xudp`, see section 4.)
-- Start the local client per base step 7 (`$SB_DIR/singbox-minimal-deploy/scripts/run-local-client.sh ...`) and read server logs read-only with `$SSH "cd ${REMOTE_DIR} && docker compose logs --tail=40"`.
+- Start the local client per base step 7 (`$SB_DIR/singbox-minimal-deploy/scripts/run-local-client.sh ...`) and read server logs read-only with `$SSH "cd ${REMOTE_DIR} && tail -n 40 logs/sing-box.log"`.
 
 ## 4. After VLESS-REALITY is added
 

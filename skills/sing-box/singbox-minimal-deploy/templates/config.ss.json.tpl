@@ -1,5 +1,5 @@
 {
-  "log": { "level": "${LOG_LEVEL}" },
+  "log": { "level": "${LOG_LEVEL}", "output": "/var/log/sing-box/sing-box.log", "timestamp": true },
   "inbounds": [
     {
       "type": "shadowsocks",
