@@ -69,6 +69,15 @@ Expected log evidence: for SS, an `inbound/shadowsocks[ss-in]` connection follow
 - **IPv6**: `curl -6 --max-time 8 -x http://127.0.0.1:${LOCAL_MIXED_PORT} https://api64.ipify.org`; compare with `$SSH 'curl -6 --max-time 10 https://api64.ipify.org'` (equal -> the request exits via the VPS; if the VPS has no IPv6 this fails, which is informational).
 - **WebRTC UDP** (browser, only with TUN/system proxy): an IP other than `${SERVER_IP}` in a WebRTC test means UDP is not proxied - confirm the selected node has `udp: true` (and `packet-encoding: xudp` for VLESS) and retest.
 
+## E2. When to switch the REALITY SNI (VLESS node only)
+
+Switch only if SS passes but the **VLESS-REALITY** node fails in a way that points to the handshake, i.e. **after** you have excluded the other causes (port 8443 reachable via `nc`, `uuid`/public key/short id/`flow` identical on both sides, server `check` OK):
+- local client log shows REALITY/TLS handshake errors, `EOF`, `reality verification failed`, or connection timeouts to `${SERVER_IP}:${VLESS_PORT}` while `nc -zv` succeeds;
+- server log shows no `inbound/vless[vless-reality-in]` entry for the test, or shows handshake/`REALITY: processed invalid connection` style errors;
+- the server cannot reach the SNI site: `[REMOTE] curl -sS -o /dev/null -m 10 -w '%{http_code}\n' https://${REALITY_SNI}` fails/times out.
+
+Then follow the **SNI fallback procedure in `singbox-config-generate`**: `www.microsoft.com` (default) -> `www.intel.com` -> `www.nvidia.com`. Server `config.json` (`tls.server_name` + `reality.handshake.server`, port 443) and the client `servername` **must be changed together**, then `sing-box check`, restart, and re-run stage 7 for both nodes. Try one fallback at a time; if all three fail, stop and report instead of trying other sites. Do not switch for SS problems or for a single slow request.
+
 ## F. Performance baseline (optional, run when comparing protocols)
 
 ```bash

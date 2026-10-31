@@ -21,7 +21,7 @@ You are a **local agent** on the user's machine. You are given remote server inf
 | SSH port | `SSH_PORT` | often not 22 |
 | SSH user | `SSH_USER` | usually root |
 | SSH private key path (local) | `SSH_KEY` | key auth; if the user only has a password, ask them to set up a key/ssh-agent themselves - do not store passwords |
-| REALITY camouflage site | `REALITY_SNI` | agree with the user; must be TLS 1.3 capable and reachable from the VPS |
+| REALITY camouflage site | `REALITY_SNI` | **default `www.microsoft.com`** (user's decision); fallbacks in order only if real testing fails: `www.intel.com`, then `www.nvidia.com` |
 | Optional overrides | `SS_PORT` 8388, `VLESS_PORT` 8443, `INSTALL_DIR` /opt/sing-box, `LOG_LEVEL` info, `VLESS_FLOW` xtls-rprx-vision | defaults come from the recorded deployment |
 | Local tools | `ssh`, `scp`, `openssl`, `python3` (+ PyYAML for validation), `curl`, `nc`; `mihomo` or `sing-box` for stage 7 | ask before installing anything |
 
@@ -52,6 +52,12 @@ Template for all variables: `templates/inputs.env.example` -> copy to `./singbox
 
 Re-runs: stages are idempotent as written (mkdir -p, config backed up before overwrite). If the server already runs the node (stage 1 finds container `sing-box`), ask the user whether to reuse the existing credentials (then skip stage 3 and copy the existing values into `secrets.env`) or replace them (back up first, rotate, update clients).
 
+## REALITY SNI default and fallback
+
+- Default: `REALITY_SNI=www.microsoft.com` for server `tls.server_name`, server `reality.handshake.server` (`handshake.server_port` 443) and the client `servername` - all three always identical.
+- Keep it unless **real testing fails** (VLESS handshake failure/timeouts after port, UUID, keys, short id and flow were ruled out - see `singbox-local-verify` "When to switch the REALITY SNI"). Then switch in this order: `www.intel.com`, then `www.nvidia.com`. If all three fail, stop and report; never try other sites.
+- Switching changes **both** the server `config.json` and the Clash `servername` together: set the new `REALITY_SNI` in `secrets.env` -> re-render server config and `clash.yaml` (credentials unchanged) -> back up + upload -> `sing-box check` (must pass) -> `docker compose restart` -> re-run stage 7 for both nodes. Full commands: `singbox-config-generate`, section "SNI fallback procedure".
+
 ## Final deliverable and report
 
 1. `./singbox-work/clash.yaml` (path only; do not paste contents).
@@ -65,7 +71,7 @@ Re-runs: stages are idempotent as written (mkdir -p, config backed up before ove
 # LOCAL
 mkdir -p singbox-work && chmod 700 singbox-work
 cp singbox-deploy-full/templates/inputs.env.example singbox-work/secrets.env && chmod 600 singbox-work/secrets.env
-# ... fill SERVER_IP SSH_PORT SSH_USER SSH_KEY REALITY_SNI, then run stages 1..7 in order
+# ... fill SERVER_IP SSH_PORT SSH_USER SSH_KEY (REALITY_SNI defaults to www.microsoft.com), then run stages 1..7 in order
 singbox-config-generate/scripts/gen-secrets.sh singbox-work/secrets.env
 python3 singbox-config-generate/scripts/render.py singbox-config-generate/templates/config.ss-vless.json.tpl singbox-work/config.json --env-file singbox-work/secrets.env
 python3 singbox-clash-config/scripts/render.py singbox-clash-config/templates/clash.yaml.tpl singbox-work/clash.yaml --env-file singbox-work/secrets.env

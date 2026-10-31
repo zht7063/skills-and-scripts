@@ -11,17 +11,47 @@ description: Use when a local agent must generate the credentials (Shadowsocks 2
 
 ## Inputs
 
-From `./singbox-work/secrets.env` (see `singbox-deploy-full/templates/inputs.env.example`): `SERVER_IP SSH_PORT SSH_USER SSH_KEY`, `SS_PORT` (8388), `SS_METHOD` (`2022-blake3-aes-128-gcm`), `VLESS_PORT` (8443), `VLESS_FLOW` (`xtls-rprx-vision`), `LOG_LEVEL` (`info`), and **`REALITY_SNI`**.
+From `./singbox-work/secrets.env` (see `singbox-deploy-full/templates/inputs.env.example`): `SERVER_IP SSH_PORT SSH_USER SSH_KEY`, `SS_PORT` (8388), `SS_METHOD` (`2022-blake3-aes-128-gcm`), `VLESS_PORT` (8443), `VLESS_FLOW` (`xtls-rprx-vision`), `LOG_LEVEL` (`info`), and **`REALITY_SNI`** (default `www.microsoft.com`).
 
-### REALITY_SNI must be decided with the user
+### REALITY_SNI: default `www.microsoft.com`, with an ordered fallback
 
-`REALITY_SNI` is the real, TLS 1.3 / h2-capable public website the server impersonates (it is used both as `server_name` and as the `handshake.server`; the client must use the **identical** value as its `servername`). The recorded notes do not state which site was used. Do not invent one silently: propose a well-known large site (e.g. a major CDN/vendor site that supports TLS 1.3 and is reachable from the VPS), confirm with the user, and verify reachability from the server:
+The user decided: **`REALITY_SNI=www.microsoft.com` by default**. It is a real TLS 1.3 / h2 public site that the server impersonates. One value is used in three places and they must always be identical:
 
-**[REMOTE]**
+| Where | Field |
+| --- | --- |
+| server `config.json` | `tls.server_name` |
+| server `config.json` | `tls.reality.handshake.server` (with `handshake.server_port` = **443**) |
+| client (Clash / sing-box client) | `servername` / `tls.server_name` |
+
+**Fallback order, only if real testing fails** (see `singbox-local-verify` for what counts as a failure): `www.microsoft.com` -> `www.intel.com` -> `www.nvidia.com`. Do not pick any other site and do not switch "just in case"; keep microsoft while it works.
+
+Reachability pre-check from the server before the first deployment (**[REMOTE]**, read-only):
 ```bash
-$SSH 'curl -sS -o /dev/null -w "%{http_code} %{ssl_verify_result}\n" --max-time 10 https://${REALITY_SNI}'
+$SSH 'curl -sS -o /dev/null -w "%{http_code} verify=%{ssl_verify_result}\n" --max-time 10 https://www.microsoft.com'
 ```
-Must return an HTTP status (200/301/302) quickly.
+Must return an HTTP status (200/301/302) quickly. If it fails or times out, record it and try the next fallback in order (same check) *before* deploying.
+
+### SNI fallback procedure (switching an already deployed node)
+
+Switching the SNI changes **server and clients together**; doing only one side breaks the VLESS node (SS is unaffected).
+
+1. **[LOCAL]** set the next value in `./singbox-work/secrets.env`: `REALITY_SNI=www.intel.com` (second failure: `www.nvidia.com`). If all three fail, stop and report to the user with the logs; do not try other sites.
+2. **[LOCAL]** re-render the server config and the client config(s) from the templates:
+   ```bash
+   python3 scripts/render.py templates/config.ss-vless.json.tpl ./singbox-work/config.json --env-file ./singbox-work/secrets.env
+   python3 ../singbox-clash-config/scripts/render.py ../singbox-clash-config/templates/clash.yaml.tpl ./singbox-work/clash.yaml --env-file ./singbox-work/secrets.env
+   python3 ../singbox-clash-config/scripts/validate_clash.py ./singbox-work/clash.yaml
+   ```
+   Credentials (UUID, keypair, short id) are **unchanged** - do not regenerate them.
+3. **[REMOTE]** back up, upload, check, restart (details in `singbox-compose-run`):
+   ```bash
+   $SSH "cd ${INSTALL_DIR} && cp config.json backups/config.json.$(date +%Y%m%d-%H%M%S)"
+   scp -P ${SSH_PORT} -i ${SSH_KEY} ./singbox-work/config.json ${SSH_USER}@${SERVER_IP}:${INSTALL_DIR}/config.json
+   $SSH "chmod 600 ${INSTALL_DIR}/config.json && cd ${INSTALL_DIR} && docker compose run --rm sing-box -c /etc/sing-box/config.json check && echo CONFIG_OK"
+   $SSH "cd ${INSTALL_DIR} && docker compose restart && sleep 3 && docker compose ps && docker compose logs --tail=20"
+   ```
+   Gate: `CONFIG_OK` before restart; log shows the TCP `${VLESS_PORT}` listener and `sing-box started`.
+4. **[LOCAL]** re-import/refresh `clash.yaml` in the client and re-run `singbox-local-verify` for **both** nodes. Record which SNI finally works in `singbox-work/NOTES.md` (no secrets).
 
 ## Templates (in this skill)
 

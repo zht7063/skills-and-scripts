@@ -7,7 +7,7 @@ description: Use when a local agent must produce a ready-to-import Clash / Mihom
 
 **Local agent, no remote commands.** Inputs: all variables in `./singbox-work/secrets.env`: `SERVER_IP SS_PORT SS_METHOD SS_PASSWORD VLESS_PORT VLESS_UUID VLESS_FLOW REALITY_PUBLIC_KEY SHORT_ID REALITY_SNI LOCAL_MIXED_PORT LOCAL_CONTROLLER_PORT`.
 
-**Render from `templates/clash.yaml.tpl`. Do not rewrite the YAML by hand; do not use the REALITY *private* key on the client (only `REALITY_PUBLIC_KEY`).** `REALITY_SNI` must equal the value in the server config (`servername` here = `server_name` on the server).
+**Render from `templates/clash.yaml.tpl`. Do not rewrite the YAML by hand; do not use the REALITY *private* key on the client (only `REALITY_PUBLIC_KEY`).** `REALITY_SNI` (default `www.microsoft.com`; fallbacks `www.intel.com` then `www.nvidia.com` only after real-test failure) must equal the value in the server config (`servername` here = `tls.server_name` and `reality.handshake.server` on the server). If the SNI is switched, the server config and this file must be re-rendered together (`singbox-config-generate`, "SNI fallback procedure").
 
 ## Template: `templates/clash.yaml.tpl`
 
