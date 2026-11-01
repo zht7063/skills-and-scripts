@@ -1,0 +1,32 @@
+services:
+  sing-box:
+    image: ghcr.io/sagernet/sing-box:latest
+    container_name: sing-box
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config.json:/etc/sing-box/config.json:ro
+      - ./logs:/var/log/sing-box
+    command: -c /etc/sing-box/config.json run
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Size-based rotation of ./logs/sing-box.log. Uses the same image (alpine + busybox sh/gzip),
+  # no network, no extra package on the host, everything stays in /opt/sing-box.
+  log-rotate:
+    image: ghcr.io/sagernet/sing-box:latest
+    container_name: sing-box-logrotate
+    restart: unless-stopped
+    network_mode: none
+    entrypoint: ["/bin/sh", "/rotate-logs.sh"]
+    volumes:
+      - ./logs:/var/log/sing-box
+      - ./rotate-logs.sh:/rotate-logs.sh:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "2"
